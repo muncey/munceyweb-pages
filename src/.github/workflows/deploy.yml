@@ -1,0 +1,56 @@
+# Workflow to build and deploy the Angular application to GitHub Pages
+name: Deploy Angular App to GitHub Pages
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events to the 'main' branch
+  push:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This job handles the building and deployment
+  build-and-deploy:
+    # Use the latest Ubuntu runner
+    runs-on: ubuntu-latest
+
+    # Environment variables for easy configuration
+    env:
+      REPO_NAME: munceyweb-pages 
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Recommended stable Node version for Angular 18+
+          cache: 'npm' # Cache dependencies to speed up subsequent runs
+
+      # Step 3: Install all project dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Build the Angular application for production
+      # We use the base-href flag, which is crucial for GitHub Pages.
+      # It sets the base path to load assets from the sub-directory (your repo name).
+      - name: Build Angular app
+        run: npm run build -- --base-href=/${{ env.REPO_NAME }}/
+
+      # Step 5: Deploy the build output to GitHub Pages
+      # Uses a specialized action to handle the gh-pages branch creation and deployment
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          # This token is automatically provided by GitHub for security
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # The source directory containing the built files
+          publish_dir: ./dist/${{ env.REPO_NAME }} 
+          # Use the 'gh-pages' branch for deployment
+          publish_branch: gh-pages
